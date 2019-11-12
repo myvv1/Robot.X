@@ -29,10 +29,10 @@ void ProcessData(void);
 void SendData(void);
 long Map(long x, long in_min, long in_max, long out_min, long out_max);
 void ComsLoss(void);
-void ManualDrive(void);
+//void ManualDrive(void);
 void AutoDrive(void);
-void ManualArm(void);
-void AutoArm(void);
+//void ManualArm(void);
+//void AutoArm(void);
 
 //Global Variables 
 unsigned int ONTimeR = 0;                    //Variable used to control the RC Servo Motor's Position			
@@ -52,8 +52,8 @@ unsigned char DriveState = 0;               //Variable for if drive in auto or h
 
 unsigned int CommsLossCount = 0;            //Store the number of times there was a communication loss
 unsigned short Communicating;               //Store the value ReceiveDataArray[20], if 1 then new data received
-int i = 0;
-int uartcount = 0; 
+unsigned int i = 0;
+unsigned int uartcount = 0; 
 unsigned int InterruptCount = 0;
 
 //Main code function
@@ -75,8 +75,8 @@ int main (void){
             }
             else{
                 ADC();
-                ManualDrive();
-                ManualArm();
+                //ManualDrive();
+                //ManualArm();
             }
         }
         //loop for <human operated code>
@@ -98,9 +98,9 @@ int main (void){
     
 }
 //Manual Drive code
-void ManualDrive (void){
-    
-}
+//void ManualDrive (void){
+//
+//}
 //Auto line tracking code
 void AutoDrive (void){
     //If the robot is left of the line turn it right
@@ -132,13 +132,13 @@ void AutoDrive (void){
     }
 }
 //manual manipulator movement code
-void MaunalArm (void){
-    
-}
+//void MaunalArm (void){
+//    
+//}
 //Auto manipulator movement code
-void AutoArm (void){
-    
-}
+//void AutoArm (void){
+//    
+//}
 //ADC pins to be sampled (AN0)
 void ADC (void){ 
     //ADC's to read if in manual drive
@@ -277,25 +277,31 @@ void InitUART(void){
 }
 //Timer 1 set up
 void InitTimer(void){
-        //It's possible to do the equation by hand, or with the PIC timer calculator to obtain proper values
-        //Prescaler = 1:8
-        //Period = 0xFFFF (hexadecimal) = 65535 (decimal), this is the PR value in pic timer calculator program
-
-        OpenTimer1 (T1_ON & T1_PS_1_8 & T1_SOURCE_INT & T1_GATE_OFF & T1_IDLE_STOP, 0xFFFF);
-
-        //Turn Timer1 interrupt on
-        ConfigIntTimer1 (T1_INT_PRIOR_7 & T1_INT_ON);
-        
-        //Wrong...Changed from a 125ms delay to a 500ms delay <Geoffrey Nielsen><sept 18th, 2019>
-        WriteTimer1(7957);
+    OpenTimer1 (T1_ON & T1_PS_1_8 & T1_SYNC_EXT_OFF & T1_SOURCE_INT & T1_GATE_OFF & T1_IDLE_STOP, 0x0FFF);						
+	ConfigIntTimer1 (T1_INT_PRIOR_1 & T1_INT_ON);	//Set interrupt priority and turn Timer1 interrupt on
 }
 //Timer 1 Interrupt
 void __attribute__((interrupt, auto_psv)) _T1Interrupt(void){
-	DisableIntT1;           //Disable Timer1 Interrupt
-    InterruptCount++;       //Increments by 1 in order to count multiple 125ms delays
-    WriteTimer1(7957);      
-	IFS0bits.T1IF = 0;      //Reset Timer1 interrupt flag
-	EnableIntT1;            //Enable Timer1 interrupt
+    DisableIntT1;               //Disable Timer1 interrupt 
+
+//This if statement is used to control the next state of the interrupt
+	if (TmrState == 0)
+	{
+		LATBbits.LATB6 = 1;     //Set high signal for RB6
+		T1CONbits.TCKPS = 1;	//Change prescaler to 1:8
+		TmrVal = ONTimeR;        //Set TmrVal = ONTime
+		TmrState = 1;           //Set next state for the interrupt
+	}
+	else if (TmrState == 1)
+	{
+		LATBbits.LATB6 = 0;     //Set low signal for RB6
+		TmrVal = OFFTime;       //Set TmrVal = OFFTime
+		T1CONbits.TCKPS = 2;	//Change prescaler to 1:64
+		TmrState = 0;           //Set next state for the interrupt
+	}	
+	WriteTimer1(TmrVal);		//Setup Timer1 with the appropriate value to set the interrupt time
+	IFS0bits.T1IF = 0;          //Reset Timer1 interrupt flag
+	EnableIntT1;                //Enable Timer1 interrupt
 }
 // UART1 Receive Interrupt
 void __attribute__ ((interrupt, no_auto_psv)) _U1RXInterrupt(void) {

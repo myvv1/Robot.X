@@ -23,6 +23,7 @@ void ProcessData(void);
 void SendData(void);
 void Shutdown(void);
 void Gripper(void);
+void drive(void);
 
 //Global variables
 unsigned int ONTimeL = 0;       //Signal for right drive motor
@@ -59,6 +60,7 @@ int main (void){
         if (PORTBbits.RB5){    //If switch on RB5 is high (should be else if)    
             TRISBbits.TRISB6 = 0;   //Turn off Communication loss LED
             ADC();                  //ADC sets variables for drive speed and manipulator position
+            drive();
             Gripper();              //Controls movements of gripper motor using digital inputs
             SendData();         //Call SendData to send data through the UART1 TX pin to HC-05 Bluetooth Module
         } 
@@ -67,6 +69,9 @@ int main (void){
             TRISBbits.TRISB6 = 0;   //Turn off Communication loss LED
         }
     }
+}
+void drive (void){
+    
 }
 void InitIO (void){
     //inputs
